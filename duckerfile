@@ -1,2 +1,6 @@
+section config
 hostname = ducker_container				
 root = /home/nosferatu/Projects/ducker
+	
+section cmd
+/bin/busybox sh

@@ -1,39 +1,30 @@
 #define _GNU_SOURCE
-#include <unistd.h>
 #include <sys/wait.h>
 #include <sched.h>
 #include "duckerscript.h"
 
-#define Usage(code) ({printf("Usage: ducker run <command> [args]\n"); exit(code);})
+#define Usage(code) ({printf("Usage: ducker run duckerfile\n"); exit(code);})
 
 #define Container_StackSize (1<<13)
-#define HostName "ducker_container"
-
-typedef struct CloneFnArgs {
-	char *cmd;
-	char **args;
-	char **envp;
-} CloneFnArgs;
+#define Default_Hostname "ducker_container"
 
 int CloneFn(void *);
 
-static void run(int, char *[], char *[]);
+static void run(DuckerScript_Table *);
 
-int CloneFn(void *args) {
-    CloneFnArgs *cloneFnArgs = (CloneFnArgs *)args;
-    if (sethostname(HostName, strlen(HostName)) != -1) {
-		execve(cloneFnArgs->cmd, cloneFnArgs->args, cloneFnArgs->envp);
-		Error("ducker", "execve failed");
-	}
-	Error("ducker", "sethostname failed");
+int CloneFn(void *arg) {
+	DuckerScript_Table *table = (DuckerScript_Table *)arg;
+	char *hostname = DuckerScript_TableFind(table, "hostname");
+	if (!hostname) hostname = Default_Hostname;
+    if (sethostname(hostname, strlen(hostname)) != -1) DuckerScript_TableCmdExecute(table);
+	else Error("ducker", "sethostname failed");
 }
 
-static void run(int argc, char *argv[], char *envp[]) {
+static void run(DuckerScript_Table *table) {
     char *stack = (char *)malloc(sizeof(char)*Container_StackSize);
     if (!stack) Error("ducker", "malloc failed");
-    CloneFnArgs args = { .cmd = argv[2], .args = &argv[2], .envp = envp };
-
-    int pid = clone(&CloneFn, stack+Container_StackSize, CLONE_NEWUTS | SIGCHLD, (void *)&args);
+	
+    int pid = clone(&CloneFn, stack+Container_StackSize, CLONE_NEWUTS | SIGCHLD, (void *)table);
     if (pid == -1) {
         free(stack);
         Error("ducker", "clone failed");
@@ -52,7 +43,9 @@ static void run(int argc, char *argv[], char *envp[]) {
 
 
 int main(int argc, char *argv[], char *envp[]) {
-	if (argc < 3) Usage(EXIT_FAILURE);
-	if (strcmp(argv[1], "run") == 0) run(argc, argv, envp);
+	if (argc != 3) Usage(EXIT_FAILURE);
+	DuckerScript_Table *table = NULL;
+	DuckerScript_ParseFile(argv[2], &table);
+	if (strcmp(argv[1], "run") == 0) run(table);
 	Usage(EXIT_FAILURE);
 }

@@ -3,7 +3,7 @@ CLAGS = -Wall -Wextra
 default: run
 
 run: build
-	sudo ./ducker run /bin/busybox sh
+	sudo ./ducker run duckerfile
 
 build: ducker.c clean
 	gcc ducker.c -o ducker $(CFLAGS)

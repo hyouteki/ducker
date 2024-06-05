@@ -16,6 +16,7 @@ void Ducker_Trim(char **);
 char *Ducker_FetchUntil(char **, char);
 void Ducker_RemoveSpecial(char **);
 int Ducker_StartsWith(char *, char *);
+void Ducker_RemoveTrailing(char **, char);
 
 static int Ducker_IsBlankChar(char ch) {
 	switch (ch) {
@@ -71,6 +72,12 @@ int Ducker_StartsWith(char *text, char *prefix) {
 	for (int i = 0; i < strlen(prefix); ++i)
 		if (text[i] != prefix[i]) return 0;
 	return 1;
+}
+
+void Ducker_RemoveTrailing(char **text, char delim) {
+	char *end = *text + strlen(*text)-1;
+    while (end > *text && *end == delim) end--;
+    *(end+1) = 0;
 }
 
 #endif // DUCKER_HELPER_H_

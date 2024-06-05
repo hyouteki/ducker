@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 #include <sys/wait.h>
 #include <sched.h>
+#include <sys/mount.h>
 #include "duckerscript.h"
 
 #define Usage(code) ({printf("Usage: ducker run duckerfile\n"); exit(code);})
@@ -9,6 +10,7 @@
 #define Container_StackSize (1<<13)
 #define Default_Hostname "ducker_container"
 #define Default_Root "/"
+#define Proc_Path_Capacity 1024 
 
 int CloneFn(void *);
 
@@ -19,20 +21,34 @@ int CloneFn(void *arg) {
 
 	char *hostname = DuckerScript_TableFindDefault(table, "hostname", Default_Hostname);
     if (sethostname(hostname, strlen(hostname)) == -1) Error(Module, "sethostname failed");
-	printf("[INF] %s: set hostname = `%s`\n", Module, hostname);
+	printf("[INF] %s: hostname set to `%s`\n", Module, hostname);
 
 	char *root = DuckerScript_TableFindDefault(table, "root", Default_Root);
-    if (chroot(root) != 0) Error(Module, "chroot failed");
-	printf("[INF] %s: set root = `%s`\n", Module, root);
+	Ducker_RemoveTrailing(&root, '/');
+	char *proc = (char *)malloc(sizeof(char)*Proc_Path_Capacity);
+	snprintf(proc, Proc_Path_Capacity, "%s/proc", root);
+
+	if (mount("/proc", proc, "proc", 0, NULL) != 0) Error(Module, "mount failed");
+	printf("[INF] %s: /proc mounted to `%s`\n", Module, proc);
+
+	root = DuckerScript_TableFindDefault(table, "root", Default_Root);
+	if (chroot(root) != 0) Error(Module, "chroot failed");
+	printf("[INF] %s: root set to `%s`\n", Module, root);
 	
 	DuckerScript_TableCmdExecute(table);
+
+	if (umount(proc) != 0) Error(Module, "umount failed");
+	printf("[INF] %s: /proc `%s` unmounted\n", Module, proc);
+	
+	exit(EXIT_SUCCESS);
 }
 
 static void run(DuckerScript_Table *table) {
     char *stack = (char *)malloc(sizeof(char)*Container_StackSize);
     if (!stack) Error(Module, "malloc failed");
-	
-    int pid = clone(&CloneFn, stack+Container_StackSize, CLONE_NEWUTS | SIGCHLD, (void *)table);
+
+	int flags = CLONE_NEWPID | CLONE_NEWUTS | SIGCHLD;
+    int pid = clone(&CloneFn, stack+Container_StackSize, flags, (void *)table);
     if (pid == -1) {
         free(stack);
         Error(Module, "clone failed");

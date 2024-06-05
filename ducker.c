@@ -27,7 +27,10 @@ int CloneFn(void *arg) {
 	Ducker_RemoveTrailing(&root, '/');
 	char *proc = (char *)malloc(sizeof(char)*Proc_Path_Capacity);
 	snprintf(proc, Proc_Path_Capacity, "%s/proc", root);
-
+	
+	if (unshare(CLONE_NEWNS | CLONE_NEWPID | CLONE_NEWUTS) != 0) Error(Module, "unshare failed");
+	printf("[INF] %s: isolated namespace from host\n", Module);
+	
 	if (mount("/proc", proc, "proc", 0, NULL) != 0) Error(Module, "mount failed");
 	printf("[INF] %s: /proc mounted to `%s`\n", Module, proc);
 
@@ -47,7 +50,7 @@ static void run(DuckerScript_Table *table) {
     char *stack = (char *)malloc(sizeof(char)*Container_StackSize);
     if (!stack) Error(Module, "malloc failed");
 
-	int flags = CLONE_NEWPID | CLONE_NEWUTS | SIGCHLD;
+	int flags = CLONE_NEWNS | CLONE_NEWPID | CLONE_NEWUTS | SIGCHLD;
     int pid = clone(&CloneFn, stack+Container_StackSize, flags, (void *)table);
     if (pid == -1) {
         free(stack);

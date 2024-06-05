@@ -1,9 +1,15 @@
 CLAGS = -Wall -Wextra
 
-default: build
+default: run
+
+run: build
+	sudo ./ducker run /bin/busybox sh
 
 build: ducker.c clean
 	gcc ducker.c -o ducker $(CFLAGS)
 
+buildscript: duckerscript.c duckerscript.h
+	gcc duckerscript.c -o duckerscript $(CFLAGS)
+
 clean:
-	rm -f ducker
+	rm -f ducker duckerscript

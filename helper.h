@@ -6,7 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#define Error(module, ...)								\
+#define Error(module, ...)												\
 	({printf("[ERR] %s: %s\n", module, __VA_ARGS__); exit(EXIT_FAILURE);})
 
 static int Ducker_IsBlankChar(char);

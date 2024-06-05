@@ -1,6 +1,6 @@
 section config
 hostname = ducker_container				
-root = /home/nosferatu/Projects/ducker
+root = alpine-minirootfs-3.20.0-x86_64/
 	
 section cmd
-/bin/busybox sh
+alpine-minirootfs-3.20.0-x86_64/bin/busybox sh

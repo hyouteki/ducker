@@ -38,6 +38,7 @@ void DuckerScript_TableAdd(DuckerScript_Table **, DuckerScript_Entry *);
 void DuckerScript_TableFree(DuckerScript_Table *);
 void DuckerScript_TablePrint(DuckerScript_Table *);
 char *DuckerScript_TableFind(DuckerScript_Table *, char *);
+char *DuckerScript_TableFindDefault(DuckerScript_Table *, char *, char *);
 void DuckerScript_TableCmdExecute(DuckerScript_Table *);
 void DuckerScript_ParseFile(char *, DuckerScript_Table **);
 
@@ -92,6 +93,11 @@ char *DuckerScript_TableFind(DuckerScript_Table *table, char *key) {
 		itr = itr->next;
 	}
 	return NULL;
+}
+
+char *DuckerScript_TableFindDefault(DuckerScript_Table *table, char *key, char *defaultVal) {
+	char *val = DuckerScript_TableFind(table, key);
+	return val? val: defaultVal;
 }
 
 void DuckerScript_TableCmdExecute(DuckerScript_Table *table) {
